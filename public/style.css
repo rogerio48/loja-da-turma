@@ -1,0 +1,19 @@
+* { box-sizing: border-box; }
+body { margin: 0; background: #eef4fb; color: #17324d;
+  font-family: Arial, sans-serif; line-height: 1.6; }
+main { max-width: 720px; margin: 48px auto; padding: 28px; }
+h1 { font-size: clamp(2rem, 6vw, 3.2rem); line-height: 1.1; }
+.etiqueta { color: #086559; font-weight: bold; letter-spacing: 2px; }
+section { background: white; border-radius: 18px; padding: 28px;
+  box-shadow: 0 8px 30px #17324d12; }
+.preco { font-size: 2rem; font-weight: bold; }
+label { display: block; font-weight: bold; }
+input { display: block; width: 100%; padding: 12px; margin: 8px 0 16px;
+  font: inherit; border: 1px solid #63768a; border-radius: 8px; }
+button { background: #086559; color: white; border: 0; border-radius: 8px;
+  padding: 14px 20px; font: inherit; cursor: pointer; }
+button:hover { background: #054e45; }
+:focus-visible { outline: 3px solid #be6500; outline-offset: 4px; }
+#resultado { min-height: 52px; font-weight: bold; }
+#ambiente, footer { font-size: .9rem; overflow-wrap: anywhere; }
+@media (max-width: 480px) { main { margin: 12px auto; padding: 16px; } }

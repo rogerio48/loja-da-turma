@@ -1,0 +1,38 @@
+const fs = require('node:fs');
+const path = require('node:path');
+
+// Localiza a pasta principal do projeto.
+const raiz = path.join(__dirname, '..');
+
+// Define onde os arquivos prontos serão colocados.
+const destino = path.join(raiz, 'dist');
+
+// Remove somente a pasta de distribuição anterior.
+fs.rmSync(destino, {
+  recursive: true,
+  force: true
+});
+
+// Cria novamente a pasta dist.
+fs.mkdirSync(destino);
+
+// Copia a pasta public com HTML, CSS e JavaScript.
+fs.cpSync(
+  path.join(raiz, 'public'),
+  path.join(destino, 'public'),
+  { recursive: true }
+);
+
+// Copia o servidor para a pasta dist.
+fs.copyFileSync(
+  path.join(raiz, 'server.js'),
+  path.join(destino, 'server.js')
+);
+
+// Registra a versão da aplicação.
+fs.writeFileSync(
+  path.join(destino, 'REVISION'),
+  process.env.GITHUB_SHA || 'local'
+);
+
+console.log('Build concluido: arquivos prontos em dist.');

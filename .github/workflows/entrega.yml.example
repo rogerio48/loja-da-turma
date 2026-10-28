@@ -1,0 +1,77 @@
+name: Loja CI e CD
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      - name: Empacotar a versao verificada
+        run: tar -czf loja.tar.gz -C dist .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: loja-verificada
+          path: loja.tar.gz
+          retention-days: 3
+          if-no-files-found: error
+  publicar:
+    needs: verificar
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: ${{ startsWith(github.ref, 'refs/tags/') && 'producao' || 'homologacao' }}
+    concurrency:
+      group: loja-${{ startsWith(github.ref, 'refs/tags/') && 'producao' || 'homologacao' }}
+      cancel-in-progress: false
+    env:
+      SSH_HOST: ${{ secrets.SSH_HOST }}
+      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+      DESTINO: ${{ startsWith(github.ref, 'refs/tags/') && 'producao' || 'homologacao' }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: loja-verificada
+      - name: Preparar a conexao segura
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$SSH_HOST"
+          test -n "$SSH_PRIVATE_KEY"
+          test -n "$SSH_KNOWN_HOSTS"
+          [[ "$SSH_HOST" =~ ^[a-zA-Z0-9.-]+$ ]]
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+      - name: Enviar e publicar
+        shell: bash
+        run: |
+          set -euo pipefail
+          PACOTE="${GITHUB_SHA}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          scp -o BatchMode=yes -o StrictHostKeyChecking=yes \
+            -o ConnectTimeout=15 loja.tar.gz \
+            "deploy@${SSH_HOST}:/home/deploy/uploads/${PACOTE}.tar.gz"
+          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes \
+            -o ConnectTimeout=15 "deploy@${SSH_HOST}" \
+            "/usr/local/bin/loja-deploy $DESTINO $PACOTE $GITHUB_SHA"
+      - name: Remover a chave do runner
+        if: always()
+        run: rm -f ~/.ssh/id_ed25519
