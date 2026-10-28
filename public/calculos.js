@@ -5,7 +5,7 @@
         !Number.isInteger(quantidade) || quantidade < 1 || quantidade > 99) {
       throw new Error('Informe preco valido e quantidade inteira de 1 a 99.');
     }
-    return Math.round(preco * 100) * quantidade / 100;
+    return Math.round(preco * 100) * quantidade / 100 +1;
   }
   if (typeof module !== 'undefined' && module.exports) {
     module.exports = { calcularTotal };
